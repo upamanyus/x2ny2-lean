@@ -1,5 +1,6 @@
 import ring_theory.coprime
 import data.real.basic
+import data.nat.modeq
 
 open nat
 noncomputable theory
@@ -28,7 +29,7 @@ p n := sorry.
 -- induction on N, then induction on p
 --
 theorem descent_wolog (p N : ℕ) :
-  N > 0 → nat.prime p → p ∣ N → is_sum_of_relprime_squares N → is_sum_of_relprime_squares p:=
+  N > 0 → prime p → p ∣ N → is_sum_of_relprime_squares N → is_sum_of_relprime_squares p:=
 begin
   revert N,
   apply strong_induction p,
@@ -136,6 +137,40 @@ theorem descent (p x y : ℕ) :
 begin
   intros Hp Hrel,
   sorry
+end
+
+-- Reciprocity step
+
+theorem reciprocity (p : ℕ) :
+  prime p → 1 ≡ p [MOD 4] → ∃ N, N > 0 ∧ p ∣ N ∧ is_sum_of_relprime_squares N :=
+begin
+  intros Hprime Hpmod,
+  rw modeq.modeq_iff_dvd' at Hpmod,
+  swap,
+  {
+  sorry,
+  },
+  rcases Hpmod with ⟨k, Hpmod⟩,
+  have Hp : p = 4 * k + 1, {
+  unfold prime at Hprime,
+  rcases Hprime with ⟨Hpineq, _⟩,
+  sorry,
+  },
+  have h₁ : ∀ x, x ≠ 0 → (x^(2 * k) - 1) * (x^(2*k) + 1) ≡ 0 [MOD p],
+  { sorry },
+  sorry
+end
+
+
+theorem fermat (p : ℕ) :
+  prime p → 1 ≡ p [MOD 4] → ∃ a b, p = a^2 + b^2 :=
+begin
+  intros Hprime Hpmod,
+  rcases (reciprocity p Hprime Hpmod) with ⟨N, HNpos, Hdiv, Hsum⟩,
+  rcases (descent_wolog p N HNpos Hprime Hdiv Hsum) with ⟨a, b, Hsum, _⟩,
+  existsi a,
+  existsi b,
+  assumption
 end
 
 end fermat
