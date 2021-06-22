@@ -28,7 +28,7 @@ p n := sorry.
 -- induction on N, then induction on p
 --
 theorem descent_wolog (p N : ℕ) :
-  nat.prime p → p ∣ N → is_sum_of_relprime_squares N → is_sum_of_relprime_squares p:=
+  N > 0 → nat.prime p → p ∣ N → is_sum_of_relprime_squares N → is_sum_of_relprime_squares p:=
 begin
   revert N,
   apply strong_induction p,
@@ -38,20 +38,25 @@ begin
   clear N,
   intros Ntemp Hih2,
 
-  intros Hprime Hdiv Hsum,
-  have HN : ∃ N, is_sum_of_relprime_squares N ∧ p ∣ N ∧ N < p^2/2,
+  intros HNpos Hprime Hdiv Hsum,
+  have HN : ∃ N, 0 < N ∧ is_sum_of_relprime_squares N ∧ p ∣ N ∧ N < p^2/2,
   {
   sorry,
   },
   clear Hdiv Hsum,
-  cases HN with N HN,
-  cases HN with Hsum HN,
-  cases HN with Hdiv HNlt,
+  rcases HN with ⟨N, HNpos, Hsum, Hdiv, Hle⟩,
 
   have Hcases : (N = p ∨ p < N),
   {
-  cases Hdiv with x H,
-  sorry,
+    let  H : _ := nat.le_of_dvd HNpos Hdiv,
+    -- This shouldn't be so complicated.
+    by_contra,
+    push_neg at h,
+    have h2 : (p = N),
+    { exact le_antisymm H h.2, },
+    rw h2 at h,
+    let H :=  h.1,
+    contradiction,
   },
   cases Hcases with Heasy HpltN,
   { -- case N = p; easy!
@@ -61,18 +66,65 @@ begin
   { -- case p < N
     -- show that there's a smaller prime factor q
     have Hq : ∃ q, prime q ∧ q ∣ N ∧ q < p,
-    {
-    sorry,
-    -- FIXME: this will be impossible without the WOLOG
+    { -- split into cases using dite
+    exact dite (N.factors = [p])
+    (begin -- case p is the only prime factor; contradiction
+    intros Hps2,
+    let h2 := prod_factors HNpos,
+    rewrite Hps2 at h2,
+    simp at h2,
+    exfalso,
+    linarith
+    end
+    )
+    (begin -- case that there are factors other than p
+    let Hpfactor := (mem_factors HNpos).2 ⟨Hprime, Hdiv⟩,
+    have Hp : [p] ⊆ N.factors,
+    { sorry, },
+    intros HNp,
+    have Hothers : ∀ q ∈ (N/p).factors, q < p,
+    { sorry, },
+    have Hp : ¬((N/p).factors = list.nil),
+    { sorry },
+    set qs := (N/p).factors,
+    destruct qs,
+    { sorry }, -- contradiction
+    { intros q _ Hqs,
+      specialize Hothers q _,
+      { rewrite Hqs, simp },
+      existsi q,
+      let Hy := (nat.mem_factors HNpos).1 _, swap,
+      {
+        exact q
+      },
+      swap,
+      { -- q ∈ (N/p).factors → q ∈ N.factors
+        sorry,
+      },
+      {
+      have Hyy : prime q ∧ q ∣ N,
+      { exact Hy },
+      cases Hyy with Hqprime Hqdiv,
+      split,
+      { assumption },
+      split,
+      { assumption },
+      { assumption },
+      },
+    }
+    end
+    )
     },
     -- use lemma 1.4 to show that p | (N/q) and N/q is also a sum of squares of rel prime integers
     cases Hq with q Hq,
-    specialize Hih1 q Hq.2.2 N Hq.1 Hq.2.1 Hsum,
+    specialize Hih1 q Hq.2.2 N HNpos Hq.1 Hq.2.1 Hsum,
     -- by our strong induction on N (Hih2), we'll be done
     apply Hih2 (N/q),
     {
     sorry,
     },
+    { -- Prove that N/q is non-negative
+    sorry },
     { assumption },
     { sorry },
     { apply lem_1_4 N q Hsum Hq.1 Hih1 Hq.2.1, }
